@@ -15,6 +15,7 @@ func main() {
 	var (
 		pretty  = flag.Bool("pretty", false, "pretty-print with 2-space indent")
 		minify  = flag.Bool("minify", false, "strip all whitespace")
+		sortFl  = flag.Bool("sort", false, "recursively sort object keys alphabetically")
 		stats   = flag.Bool("stats", false, "print structural statistics")
 		query   = flag.String("q", "", "dot-path query, e.g. users.0.name")
 		lineNum = flag.Bool("explain", false, "on error, print line/column of the problem")
@@ -46,6 +47,15 @@ func main() {
 	switch {
 	case *pretty && *minify:
 		fatal(fmt.Errorf("--pretty and --minify are mutually exclusive"), false)
+	case *sortFl && (*pretty || *minify || *stats || *query != ""):
+		fatal(fmt.Errorf("--sort cannot be combined with other modes"), false)
+	case *sortFl:
+		out, err := SortKeys(input)
+		if err != nil {
+			fatal(err, false)
+		}
+		fmt.Println(out)
+		return
 	case *stats:
 		res, err := Analyze(input)
 		if err != nil {

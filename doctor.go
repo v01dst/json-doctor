@@ -183,3 +183,49 @@ func Query(input []byte, path string) (any, error) {
 	}
 	return cur, nil
 }
+
+// SortKeys recursively sorts object keys alphabetically.
+func SortKeys(input []byte) (string, error) {
+	var v any
+	dec := json.NewDecoder(bytes.NewReader(input))
+	dec.UseNumber()
+	if err := dec.Decode(&v); err != nil {
+		return "", err
+	}
+	sorted := sortValue(v)
+	var out bytes.Buffer
+	enc := json.NewEncoder(&out)
+	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(sorted); err != nil {
+		return "", err
+	}
+	return strings.TrimRight(out.String(), "\n"), nil
+}
+
+func sortValue(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		keys := make([]string, 0, len(t))
+		for k := range t {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		out := make(map[string]any, len(t))
+		// Use an ordered structure via json.RawMessage trick: Go maps don't
+		// preserve order, but encoding/json sorts map keys alphabetically
+		// already. We still recurse for nested values.
+		for _, k := range keys {
+			out[k] = sortValue(t[k])
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, item := range t {
+			out[i] = sortValue(item)
+		}
+		return out
+	default:
+		return v
+	}
+}

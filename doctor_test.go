@@ -130,3 +130,30 @@ func TestAnalyzeNulls(t *testing.T) {
 		t.Fatalf("nulls = %d", res.Nulls)
 	}
 }
+
+func TestSortKeys(t *testing.T) {
+	unsorted := `{"z":1,"a":{"y":2,"b":3},"m":[ {"d":4,"c":5} ]}`
+	sorted, err := SortKeys([]byte(unsorted))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// a < m < z at top level
+	aIdx := strings.Index(sorted, `"a"`)
+	mIdx := strings.Index(sorted, `"m"`)
+	zIdx := strings.Index(sorted, `"z"`)
+	if !(aIdx < mIdx && mIdx < zIdx) {
+		t.Fatalf("top-level keys not sorted: %s", sorted)
+	}
+	// nested b < y
+	if strings.Index(sorted, `"b"`) > strings.Index(sorted, `"y"`) {
+		t.Fatalf("nested keys not sorted: %s", sorted)
+	}
+	// array element keys c < d
+	if strings.Index(sorted, `"c"`) > strings.Index(sorted, `"d"`) {
+		t.Fatalf("array object keys not sorted: %s", sorted)
+	}
+
+	if _, err := SortKeys([]byte("not json")); err == nil {
+		t.Fatal("invalid json should error")
+	}
+}
