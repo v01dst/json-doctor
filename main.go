@@ -16,6 +16,7 @@ func main() {
 		pretty  = flag.Bool("pretty", false, "pretty-print with 2-space indent")
 		minify  = flag.Bool("minify", false, "strip all whitespace")
 		sortFl  = flag.Bool("sort", false, "recursively sort object keys alphabetically")
+		merge   = flag.String("merge", "", "deep-merge a second JSON file over the input")
 		stats   = flag.Bool("stats", false, "print structural statistics")
 		query   = flag.String("q", "", "dot-path query, e.g. users.0.name")
 		lineNum = flag.Bool("explain", false, "on error, print line/column of the problem")
@@ -49,6 +50,19 @@ func main() {
 		fatal(fmt.Errorf("--pretty and --minify are mutually exclusive"), false)
 	case *sortFl && (*pretty || *minify || *stats || *query != ""):
 		fatal(fmt.Errorf("--sort cannot be combined with other modes"), false)
+	case *merge != "" && (*pretty || *minify || *stats || *query != ""):
+		fatal(fmt.Errorf("--merge cannot be combined with other modes"), false)
+	case *merge != "":
+		other, err := os.ReadFile(*merge)
+		if err != nil {
+			fatal(err, false)
+		}
+		out, err := mergeFiles(input, other)
+		if err != nil {
+			fatal(err, false)
+		}
+		fmt.Println(out)
+		return
 	case *sortFl:
 		out, err := SortKeys(input)
 		if err != nil {

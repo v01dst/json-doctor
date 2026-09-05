@@ -229,3 +229,46 @@ func sortValue(v any) any {
 		return v
 	}
 }
+
+func deepMerge(base, overlay any) any {
+	baseObj, okBase := base.(map[string]any)
+	overObj, okOver := overlay.(map[string]any)
+	if !okBase || !okOver {
+		return overlay
+	}
+	out := make(map[string]any, len(baseObj)+len(overObj))
+	for k, v := range baseObj {
+		out[k] = v
+	}
+	for k, v := range overObj {
+		if existing, ok := out[k]; ok {
+			out[k] = deepMerge(existing, v)
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+func mergeFiles(a, b []byte) (string, error) {
+	var va, vb any
+	decA := json.NewDecoder(bytes.NewReader(a))
+	decA.UseNumber()
+	if err := decA.Decode(&va); err != nil {
+		return "", err
+	}
+	decB := json.NewDecoder(bytes.NewReader(b))
+	decB.UseNumber()
+	if err := decB.Decode(&vb); err != nil {
+		return "", err
+	}
+	merged := deepMerge(va, vb)
+	var out bytes.Buffer
+	enc := json.NewEncoder(&out)
+	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(merged); err != nil {
+		return "", err
+	}
+	return strings.TrimRight(out.String(), "\n"), nil
+}

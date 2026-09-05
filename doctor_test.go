@@ -157,3 +157,26 @@ func TestSortKeys(t *testing.T) {
 		t.Fatal("invalid json should error")
 	}
 }
+
+func TestMergeFiles(t *testing.T) {
+	base := []byte(`{"a":1,"nested":{"x":1,"y":2},"keep":true}`)
+	over := []byte(`{"nested":{"y":3,"z":4},"new":"here"}`)
+	out, err := mergeFiles(base, over)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"a": 1`, `"x": 1`, `"y": 3`, `"z": 4`, `"new": "here"`, `"keep": true`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("merged output missing %s:\n%s", want, out)
+		}
+	}
+}
+
+func TestMergeInvalidInput(t *testing.T) {
+	if _, err := mergeFiles([]byte("nope"), []byte(`{"a":1}`)); err == nil {
+		t.Fatal("invalid base should error")
+	}
+	if _, err := mergeFiles([]byte(`{"a":1}`), []byte("nope")); err == nil {
+		t.Fatal("invalid overlay should error")
+	}
+}
