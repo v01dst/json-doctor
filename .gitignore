@@ -1,0 +1,24 @@
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Rust
+target/
+# Go
+*.exe
+*.out
+*.test
+# Misc
+*.log
+.env
+*.db
+*.sqlite
+.DS_Store
+Thumbs.db
